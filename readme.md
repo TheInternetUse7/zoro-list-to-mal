@@ -1,6 +1,11 @@
 # zoro-list-to-mal
 
-## wip: i have no idea what i'm doing yet again but i wanted to help a friend
+## wip: i have no idea what i'm doing yet again, but i wanted to help a friend
+
+## info:
+**CURRENTLY ONLY WORKS WITH ANILIST** (use anilist :P )<BR>
+uhh this uses https://jikan.moe/ and they 3 request/sec limit so it might feel slow.<br>
+there's a similar tool at https://github.com/Adaptz/Zoro_Export_to_MAL which i found out about after i finished this :skull:
 
 ## installation:
 
