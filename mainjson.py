@@ -1,7 +1,52 @@
-import xmlparser, requests, time, os, shutil
+import jsonparser
+import requests, time, os, shutil
 
-def main():
-    for animeId in xmlparser.malIds:
+def watching_list():
+    for animeId in jsonparser.watching_id:
+
+        # ffs there's rate limit smh
+        time.sleep(0.5)
+        response = requests.get(f"https://api.jikan.moe/v4/anime/{animeId}")
+        jsonResponse = response.json()
+
+        if response.status_code == 200:
+            malId = jsonResponse["data"]["mal_id"]
+            title = jsonResponse["data"]["titles"][0]['title']
+            seriesType = jsonResponse["data"]["type"]
+            episodes = jsonResponse["data"]["episodes"]
+
+            print(malId, seriesType, title, episodes)
+
+            data = f"""<anime>
+            <series_animedb_id>{malId}</series_animedb_id>
+            <series_title><![CDATA[{title}]]></series_title>
+            <series_type>{seriesType}</series_type>
+            <series_episodes>{episodes}</series_episodes>
+            <my_id>0</my_id>
+            <my_watched_episodes>0</my_watched_episodes>
+            <my_start_date>0000-00-00</my_start_date>
+            <my_finish_date>0000-00-00</my_finish_date>
+            <my_fansub_group><![CDATA[]]></my_fansub_group>
+            <my_rated></my_rated>
+            <my_score>0</my_score>
+            <my_dvd></my_dvd>
+            <my_storage></my_storage>
+            <my_status>Watching</my_status>
+            <my_comments><![CDATA[]]></my_comments>
+            <my_times_watched>0</my_times_watched>
+            <my_rewatch_value></my_rewatch_value>
+            <my_downloaded_eps>0</my_downloaded_eps>
+            <my_tags></my_tags>
+            <my_rewatching>0</my_rewatching>
+            <my_rewatching_ep>0</my_rewatching_ep>
+            <update_on_import>1</update_on_import>
+        </anime>"""
+            with open('temp.xml', 'a', encoding='utf-8') as f:
+                f.write(data)
+        else: print(response.status_code)
+
+def completed_list():
+    for animeId in jsonparser.completed_id:
 
         # ffs there's rate limit smh
         time.sleep(0.5)
@@ -40,8 +85,141 @@ def main():
             <my_rewatching_ep>0</my_rewatching_ep>
             <update_on_import>1</update_on_import>
         </anime>"""
-            with open('.temp.xml', 'a', encoding='utf-8') as f:
+            with open('temp.xml', 'a', encoding='utf-8') as f:
                 f.write(data)
+        else: print(response.status_code)
+
+def onhold_list():
+    for animeId in jsonparser.watching_id:
+
+        # ffs there's rate limit smh
+        time.sleep(0.5)
+        response = requests.get(f"https://api.jikan.moe/v4/anime/{animeId}")
+        jsonResponse = response.json()
+
+        if response.status_code == 200:
+            malId = jsonResponse["data"]["mal_id"]
+            title = jsonResponse["data"]["titles"][0]['title']
+            seriesType = jsonResponse["data"]["type"]
+            episodes = jsonResponse["data"]["episodes"]
+
+            print(malId, seriesType, title, episodes)
+
+            data = f"""<anime>
+            <series_animedb_id>{malId}</series_animedb_id>
+            <series_title><![CDATA[{title}]]></series_title>
+            <series_type>{seriesType}</series_type>
+            <series_episodes>{episodes}</series_episodes>
+            <my_id>0</my_id>
+            <my_watched_episodes>0</my_watched_episodes>
+            <my_start_date>0000-00-00</my_start_date>
+            <my_finish_date>0000-00-00</my_finish_date>
+            <my_fansub_group><![CDATA[]]></my_fansub_group>
+            <my_rated></my_rated>
+            <my_score>0</my_score>
+            <my_dvd></my_dvd>
+            <my_storage></my_storage>
+            <my_status>On-Hold</my_status>
+            <my_comments><![CDATA[]]></my_comments>
+            <my_times_watched>0</my_times_watched>
+            <my_rewatch_value></my_rewatch_value>
+            <my_downloaded_eps>0</my_downloaded_eps>
+            <my_tags></my_tags>
+            <my_rewatching>0</my_rewatching>
+            <my_rewatching_ep>0</my_rewatching_ep>
+            <update_on_import>1</update_on_import>
+        </anime>"""
+            with open('temp.xml', 'a', encoding='utf-8') as f:
+                f.write(data)
+        else: print(response.status_code)
+
+def dropped_list():
+    for animeId in jsonparser.dropped_id:
+
+        # ffs there's rate limit smh
+        time.sleep(0.5)
+        response = requests.get(f"https://api.jikan.moe/v4/anime/{animeId}")
+        jsonResponse = response.json()
+
+        if response.status_code == 200:
+            malId = jsonResponse["data"]["mal_id"]
+            title = jsonResponse["data"]["titles"][0]['title']
+            seriesType = jsonResponse["data"]["type"]
+            episodes = jsonResponse["data"]["episodes"]
+
+            print(malId, seriesType, title, episodes)
+
+            data = f"""<anime>
+            <series_animedb_id>{malId}</series_animedb_id>
+            <series_title><![CDATA[{title}]]></series_title>
+            <series_type>{seriesType}</series_type>
+            <series_episodes>{episodes}</series_episodes>
+            <my_id>0</my_id>
+            <my_watched_episodes>0</my_watched_episodes>
+            <my_start_date>0000-00-00</my_start_date>
+            <my_finish_date>0000-00-00</my_finish_date>
+            <my_fansub_group><![CDATA[]]></my_fansub_group>
+            <my_rated></my_rated>
+            <my_score>0</my_score>
+            <my_dvd></my_dvd>
+            <my_storage></my_storage>
+            <my_status>Dropped</my_status>
+            <my_comments><![CDATA[]]></my_comments>
+            <my_times_watched>0</my_times_watched>
+            <my_rewatch_value></my_rewatch_value>
+            <my_downloaded_eps>0</my_downloaded_eps>
+            <my_tags></my_tags>
+            <my_rewatching>0</my_rewatching>
+            <my_rewatching_ep>0</my_rewatching_ep>
+            <update_on_import>1</update_on_import>
+        </anime>"""
+            with open('temp.xml', 'a', encoding='utf-8') as f:
+                f.write(data)
+        else: print(response.status_code)
+
+def planning_list():
+    for animeId in jsonparser.planning_id:
+
+        # ffs there's rate limit smh
+        time.sleep(0.5)
+        response = requests.get(f"https://api.jikan.moe/v4/anime/{animeId}")
+        jsonResponse = response.json()
+
+        if response.status_code == 200:
+            malId = jsonResponse["data"]["mal_id"]
+            title = jsonResponse["data"]["titles"][0]['title']
+            seriesType = jsonResponse["data"]["type"]
+            episodes = jsonResponse["data"]["episodes"]
+
+            print(malId, seriesType, title, episodes)
+
+            data = f"""<anime>
+            <series_animedb_id>{malId}</series_animedb_id>
+            <series_title><![CDATA[{title}]]></series_title>
+            <series_type>{seriesType}</series_type>
+            <series_episodes>{episodes}</series_episodes>
+            <my_id>0</my_id>
+            <my_watched_episodes>0</my_watched_episodes>
+            <my_start_date>0000-00-00</my_start_date>
+            <my_finish_date>0000-00-00</my_finish_date>
+            <my_fansub_group><![CDATA[]]></my_fansub_group>
+            <my_rated></my_rated>
+            <my_score>0</my_score>
+            <my_dvd></my_dvd>
+            <my_storage></my_storage>
+            <my_status>Plan to Watch</my_status>
+            <my_comments><![CDATA[]]></my_comments>
+            <my_times_watched>0</my_times_watched>
+            <my_rewatch_value></my_rewatch_value>
+            <my_downloaded_eps>0</my_downloaded_eps>
+            <my_tags></my_tags>
+            <my_rewatching>0</my_rewatching>
+            <my_rewatching_ep>0</my_rewatching_ep>
+            <update_on_import>1</update_on_import>
+        </anime>"""
+            with open('temp.xml', 'a', encoding='utf-8') as f:
+                f.write(data)
+        else: print(response.status_code)
 
 def prepend_line(file_name, line):
     """ Insert given string as a new line at the beginning of a file """
@@ -60,11 +238,17 @@ def prepend_line(file_name, line):
     os.rename(dummy_file, file_name)
 
 def append_line():
-    with open('.temp.xml', 'a', encoding='utf-8') as f:
+    with open('temp.xml', 'a', encoding='utf-8') as f:
         f.write("</myanimelist>")
 
-    shutil.copyfile(".temp.xml", "final.xml")
-    os.remove(".temp.xml")
-main()
-prepend_line(".temp.xml", '<?xml version="1.0" encoding="UTF-8"?>\n<myanimelist>')
+    shutil.copyfile("temp.xml", "final.xml")
+    os.remove("temp.xml")
+
+watching_list()
+completed_list()
+onhold_list()
+dropped_list()
+planning_list()
+
+prepend_line("temp.xml", '<?xml version="1.0" encoding="UTF-8"?><myanimelist>')
 append_line()
