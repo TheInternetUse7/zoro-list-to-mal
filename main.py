@@ -23,15 +23,16 @@ def load_data(filename: str) -> Dict:
 def id_fetch(status: List[Dict]) -> List[str]:
     return [re.findall(r'\d+', item['link'])[0] for item in status]
 
-async def fetch_anime_data(session: aiohttp.ClientSession, animeId: str, retries: int = 3) -> Dict:
+async def fetch_anime_data(session: aiohttp.ClientSession, animeId: str, retries: int = 5, initial_delay: int = 5) -> Dict:
     url = f"{config['api_url']}/anime/{animeId}"
+    delay = initial_delay
     for attempt in range(retries):
         try:
             async with session.get(url) as response:
                 if response.status == 200:
                     return await response.json()
                 elif response.status == 429:
-                    retry_after = int(response.headers.get('Retry-After', 5))
+                    retry_after = int(response.headers.get('Retry-After', delay))
                     logging.warning(f"Rate limit hit for anime {animeId}. Retrying after {retry_after} seconds.")
                     await asyncio.sleep(retry_after)
                 else:
@@ -39,7 +40,8 @@ async def fetch_anime_data(session: aiohttp.ClientSession, animeId: str, retries
                     return None
         except aiohttp.ClientError as e:
             logging.error(f"Network error fetching anime {animeId}: {e}")
-            await asyncio.sleep(1)
+            await asyncio.sleep(delay)
+            delay = min(delay * 2, 60)  # Exponential backoff with max 60 seconds
     logging.error(f"Failed to fetch anime {animeId} after {retries} attempts")
     return None
 
@@ -48,7 +50,7 @@ def create_cdata_element(parent, tag, text):
     elem.text = ET.CDATA(text)
     return elem
 
-async def process_anime(session: aiohttp.ClientSession, animeId: str, status: str, xml_root: ET.Element) -> None:
+async def process_anime(session: aiohttp.ClientSession, animeId: str, status: str, xml_root: ET.Element, failed_ids: List[str]) -> None:
     data = await fetch_anime_data(session, animeId)
     if data:
         anime_data = data["data"]
@@ -79,9 +81,10 @@ async def process_anime(session: aiohttp.ClientSession, animeId: str, status: st
         logging.info(f"Processed anime: {anime_data['titles'][0]['title']}")
     else:
         logging.error(f"Failed to process anime: {animeId}")
+        failed_ids.append(animeId)  # Add to failed list
 
-async def process_chunk(session: aiohttp.ClientSession, chunk: List[str], status: str, xml_root: ET.Element) -> None:
-    tasks = [process_anime(session, animeId, status, xml_root) for animeId in chunk]
+async def process_chunk(session: aiohttp.ClientSession, chunk: List[str], status: str, xml_root: ET.Element, failed_ids: List[str]) -> None:
+    tasks = [process_anime(session, animeId, status, xml_root, failed_ids) for animeId in chunk]
     await asyncio.gather(*tasks)
 
 async def main() -> None:
@@ -110,14 +113,39 @@ async def main() -> None:
     # ET.SubElement(myinfo, "user_total_plantowatch").text = str(len(data['Plan to watch']))
     
     async with aiohttp.ClientSession() as session:
+        failed_ids = []
+        request_counter = 0
+        start_time = time.time()
+
         for status, (mal_status, anime_list) in status_mapping.items():
-            if anime_list:  # Only process if there are anime entries
+            if anime_list:
                 anime_ids = id_fetch(anime_list)
                 chunk_size = config['chunk_size']
                 for i in range(0, len(anime_ids), chunk_size):
                     chunk = anime_ids[i:i+chunk_size]
-                    await process_chunk(session, chunk, mal_status, xml_root)
-                    await asyncio.sleep(1)  # Add a delay between chunks to help with rate limiting
+                    await process_chunk(session, chunk, mal_status, xml_root, failed_ids)
+                    
+                    # Increment the request counter
+                    request_counter += len(chunk)
+
+                    # Calculate the time spent
+                    elapsed_time = time.time() - start_time
+
+                    # Ensure we don't exceed 60 requests per minute
+                    if request_counter >= 60 and elapsed_time < 60:
+                        sleep_time = 60 - elapsed_time
+                        logging.info(f"Rate limit for minute reached. Sleeping for {sleep_time:.2f} seconds.")
+                        await asyncio.sleep(sleep_time)
+                        request_counter = 0
+                        start_time = time.time()
+
+                    # Ensure we don't exceed 3 requests per second
+                    await asyncio.sleep(1/3 * len(chunk))
+
+        # Retry failed IDs
+        if failed_ids:
+            logging.info(f"Retrying {len(failed_ids)} failed anime IDs...")
+            await process_chunk(session, failed_ids, mal_status, xml_root, [])  # Retry without collecting failed IDs again
 
     tree = ET.ElementTree(xml_root)
     
@@ -128,13 +156,12 @@ async def main() -> None:
 
 '''
     
-    with open(config['output_file'], 'wb') as f:
+    with open(config['output_file'], 'wb') as f:  # Open in binary mode for utf-8 encoding
         f.write(xml_declaration.encode('utf-8'))
         f.write(comments.encode('utf-8'))
         tree.write(f, encoding='utf-8', pretty_print=True, xml_declaration=False)
     
     logging.info(f"Anime list exported to {config['output_file']}")
-
 
 if __name__ == "__main__":
     asyncio.run(main())
