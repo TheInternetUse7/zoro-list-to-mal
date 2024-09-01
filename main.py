@@ -88,15 +88,15 @@ async def main() -> None:
     data = load_data(config['input_file'])
     
     status_mapping: Dict[str, Tuple[str, List[Dict]]] = {
-        'Watching': ('Watching', data['Watching']),
-        'Completed': ('Completed', data['Completed']),
-        'On-Hold': ('On-Hold', data['On-Hold']),
-        'Dropped': ('Dropped', data['Dropped']),
-        'Plan to watch': ('Plan to Watch', data['Plan to watch'])
+        'Watching': ('Watching', data.get('Watching', [])),
+        'Completed': ('Completed', data.get('Completed', [])),
+        'On-Hold': ('On-Hold', data.get('On-Hold', [])),
+        'Dropped': ('Dropped', data.get('Dropped', [])),
+        'Plan to watch': ('Plan to Watch', data.get('Plan to watch', []))
     }
 
     xml_root = ET.Element("myanimelist")
-    
+
     # Add myinfo section (optional)
     # myinfo = ET.SubElement(xml_root, "myinfo")
     # ET.SubElement(myinfo, "user_id").text = "YOUR_USER_ID"
@@ -111,16 +111,16 @@ async def main() -> None:
     
     async with aiohttp.ClientSession() as session:
         for status, (mal_status, anime_list) in status_mapping.items():
-            anime_ids = id_fetch(anime_list)
-            chunk_size = config['chunk_size']
-            for i in range(0, len(anime_ids), chunk_size):
-                chunk = anime_ids[i:i+chunk_size]
-                await process_chunk(session, chunk, mal_status, xml_root)
-                await asyncio.sleep(1)  # Add a delay between chunks to help with rate limiting
+            if anime_list:  # Only process if there are anime entries
+                anime_ids = id_fetch(anime_list)
+                chunk_size = config['chunk_size']
+                for i in range(0, len(anime_ids), chunk_size):
+                    chunk = anime_ids[i:i+chunk_size]
+                    await process_chunk(session, chunk, mal_status, xml_root)
+                    await asyncio.sleep(1)  # Add a delay between chunks to help with rate limiting
 
     tree = ET.ElementTree(xml_root)
     
-    # Add XML declaration and comments
     xml_declaration = '<?xml version="1.0" encoding="UTF-8" ?>\n'
     comments = '''<!--
  Created by a wacky script from theinternetuser
@@ -128,13 +128,13 @@ async def main() -> None:
 
 '''
     
-    # Write the XML to a file with correct encoding
-    with open(config['output_file'], 'wb') as f:  # Open in binary mode for utf-8 encoding
+    with open(config['output_file'], 'wb') as f:
         f.write(xml_declaration.encode('utf-8'))
         f.write(comments.encode('utf-8'))
         tree.write(f, encoding='utf-8', pretty_print=True, xml_declaration=False)
     
     logging.info(f"Anime list exported to {config['output_file']}")
+
 
 if __name__ == "__main__":
     asyncio.run(main())
