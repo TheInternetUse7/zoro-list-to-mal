@@ -1,0 +1,4 @@
+api_url: "https://api.jikan.moe/v4"
+input_file: "export.json"
+output_file: "final.xml"
+chunk_size: 10
